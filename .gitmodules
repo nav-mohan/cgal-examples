@@ -10,3 +10,6 @@
 [submodule "dt_bunny/libs/imgui"]
 	path = dt_bunny/libs/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "normal_bunny/libs/imgui"]
+	path = normal_bunny/libs/imgui
+	url = https://github.com/ocornut/imgui
