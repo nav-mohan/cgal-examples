@@ -1,3 +1,6 @@
 [submodule "alpha_bunny/libs/imgui"]
 	path = alpha_bunny/libs/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "delaunay_vs_regular_triangulation/libs/imgui"]
+	path = delaunay_vs_regular_triangulation/libs/imgui
+	url = https://github.com/ocornut/imgui
