@@ -7,3 +7,6 @@
 [submodule "voronoi_delaunay/libs/imgui"]
 	path = voronoi_delaunay/libs/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "dt_bunny/libs/imgui"]
+	path = dt_bunny/libs/imgui
+	url = https://github.com/ocornut/imgui
