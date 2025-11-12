@@ -13,3 +13,6 @@
 [submodule "normal_bunny/libs/imgui"]
 	path = normal_bunny/libs/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "offviewer/libs/imgui"]
+	path = offviewer/libs/imgui
+	url = https://github.com/ocornut/imgui
