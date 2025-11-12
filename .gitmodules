@@ -4,3 +4,6 @@
 [submodule "delaunay_vs_regular_triangulation/libs/imgui"]
 	path = delaunay_vs_regular_triangulation/libs/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "voronoi_delaunay/libs/imgui"]
+	path = voronoi_delaunay/libs/imgui
+	url = https://github.com/ocornut/imgui
