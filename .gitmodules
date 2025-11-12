@@ -16,3 +16,6 @@
 [submodule "offviewer/libs/imgui"]
 	path = offviewer/libs/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "poisson_bunny/libs/imgui"]
+	path = poisson_bunny/libs/imgui
+	url = https://github.com/ocornut/imgui
