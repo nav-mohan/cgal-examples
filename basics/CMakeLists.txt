@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.10)
+project(cgal_basics)
+set(CMAKE_CXX_STANDARD 17)
+
+set(BOOST_INCLUDE_DIR /home/nmohan/Desktop/test/boost_1_89_0/)
+set(CGAL_INCLUDE_DIR /home/nmohan/Desktop/test/cgal-example/CGAL-6.1/include)
+set(BOOST_LIBRARY_DIR /home/nmohan/Desktop/test/boost_1_89_0/libs)
+include_directories(${BOOST_INCLUDE_DIR} ${CGAL_INCLUDE_DIR})
+link_directories( ${BOOST_LIBRARY_DIR} )
+link_libraries("gmp")
+
+add_executable(dist2 dist2.cpp)
+add_executable(predicates predicates.cpp)
+add_executable(triangulation triangulation.cpp)
+add_executable(check_version check-version.cpp)
