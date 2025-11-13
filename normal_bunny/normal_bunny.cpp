@@ -1,5 +1,4 @@
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-
 #include <CGAL/compute_average_spacing.h>
 #include <CGAL/pca_estimate_normals.h>
 #include <CGAL/mst_orient_normals.h>
@@ -7,29 +6,29 @@
 #include <CGAL/IO/read_points.h>
 
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include <utility>
 #include <list>
 #include <fstream>
 
 // Types
-typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
-typedef Kernel::Point_3 Point;
-typedef Kernel::Vector_3 Vector;
+typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel_t;
+typedef Kernel_t::Point_3 Point;
+typedef Kernel_t::Vector_3 Vector;
 typedef std::pair<Point, Vector> PointVectorPair; // Point with normal vector stored in a std::pair.
 
-std::vector<Point> normalize_points(std::vector<Point> &pts)
+std::vector<Point> NormalizePoints(std::vector<Point> &pts)
 {
-  if (pts.empty())
-    return {};
+  if (pts.empty()) return {};
+
   float minx = 1e9, miny = 1e9, minz = 1e9;
   float maxx = -1e9, maxy = -1e9, maxz = -1e9;
+  
   for (auto &p : pts)
   {
     const float x = p.x();
@@ -59,7 +58,7 @@ std::vector<Point> normalize_points(std::vector<Point> &pts)
   return norm_pts;
 }
 
-void render_point_cloud_with_normals(const std::vector<Point> &points, const std::vector<Vector> &normals, float normal_scale = 0.05f)
+void RenderPointsWithNormals(const std::vector<Point> &points, const std::vector<Vector> &normals, float normal_scale = 0.05f)
 {
   // Draw points
   glPointSize(4.0f);
@@ -93,10 +92,10 @@ double last_x, last_y;
 bool rotating = false;
 bool zooming = false;
 
-void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
+// callback for mouse clicks
+void MouseBtnCB(GLFWwindow *window, int button, int action, int mods)
 {
-  if (ImGui::GetIO().WantCaptureMouse)
-    return; // ignore if clicking inside ImGui
+  if (ImGui::GetIO().WantCaptureMouse) return; // ImGui captured mouseclick - ignore
 
   if (button == GLFW_MOUSE_BUTTON_LEFT)
   {
@@ -110,7 +109,8 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
   }
 }
 
-void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
+// mouse callback for panning
+void CursorDragCB(GLFWwindow *window, double xpos, double ypos)
 {
   if (rotating)
   {
@@ -122,11 +122,9 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
     camera_theta -= dx * 0.005f;
     camera_phi += dy * 0.005f;
 
-    // Clamp phi to avoid flipping at poles
-    if (camera_phi > 1.5f)
-      camera_phi = 1.5f;
-    if (camera_phi < -1.5f)
-      camera_phi = -1.5f;
+    // restrict phi to avoid flipping 
+    if (camera_phi > 1.5f) camera_phi = 1.5f;
+    if (camera_phi < -1.5f) camera_phi = -1.5f;
   }
 
   if (zooming)
@@ -134,23 +132,25 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
     float dy = float(ypos - last_y);
     last_y = ypos;
     camera_distance *= (1.0f + dy * 0.01f);
-    if (camera_distance < 0.1f)
-      camera_distance = 0.1f;
-    if (camera_distance > 10.0f)
-      camera_distance = 10.0f;
+    
+    // dont zoom beyond [0.1,10.0]
+    if (camera_distance < 0.1f) camera_distance = 0.1f;
+    if (camera_distance > 10.0f) camera_distance = 10.0f;
   }
 }
 
-void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
+// scroll callback function - do zooming
+void ScrollCB(GLFWwindow *window, double xoffset, double yoffset)
 {
   camera_distance *= (1.0 - yoffset * 0.1f);
-  if (camera_distance < 0.1f)
-    camera_distance = 0.1f;
-  if (camera_distance > 10.0f)
-    camera_distance = 10.0f;
+
+  // dont zoom beyond [0.1,10.0]
+  if (camera_distance < 0.1f) camera_distance = 0.1f;
+  if (camera_distance > 10.0f) camera_distance = 10.0f;
 }
 
-void setup_viewport(int width, int height)
+// compute projection matrix for rotation and translation(zoom)
+void SetupViewport(int width, int height)
 {
   glViewport(0, 0, width, height);
   glEnable(GL_DEPTH_TEST);
@@ -177,14 +177,14 @@ void setup_viewport(int width, int height)
 
 int main(int argc, char *argv[])
 {
-  if (!glfwInit())
-    return -1;
+  if (!glfwInit()) return -1;
+
   GLFWwindow *window = glfwCreateWindow(800, 600, "normals bunny", nullptr, nullptr);
   glfwMakeContextCurrent(window);
-  glfwSetMouseButtonCallback(window, mouse_button_callback);
-  glfwSetCursorPosCallback(window, cursor_position_callback);
-  glfwSetScrollCallback(window, scroll_callback);
-  glEnable(GL_DEPTH_TEST); // Enable depth testing for 3D rendering
+  glfwSetMouseButtonCallback(window, MouseBtnCB);
+  glfwSetCursorPosCallback(window, CursorDragCB);
+  glfwSetScrollCallback(window, ScrollCB);
+  glEnable(GL_DEPTH_TEST); // Enable depth for 3D 
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
     outfile << x << " " << nx << " " << y << " " << ny << " " << z << " " << nz << "\n";
   }
 
-  pointsToVisualize = std::move(normalize_points(pointsToVisualize));
+  pointsToVisualize = std::move(NormalizePoints(pointsToVisualize));
 
   while (!glfwWindowShouldClose(window))
   {
@@ -254,8 +254,8 @@ int main(int argc, char *argv[])
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    setup_viewport(800, 600);
-    render_point_cloud_with_normals(pointsToVisualize, normalsToVisualize);
+    SetupViewport(800, 600);
+    RenderPointsWithNormals(pointsToVisualize, normalsToVisualize);
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
