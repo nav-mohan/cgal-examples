@@ -20,7 +20,7 @@ struct Mesh
     std::vector<unsigned int> indices;
 };
 
-bool loadOFF(const std::string &filename, Mesh &mesh)
+bool LoadOFF(const std::string &filename, Mesh &mesh)
 {
     std::ifstream in(filename);
     if (!in)
@@ -48,8 +48,7 @@ bool loadOFF(const std::string &filename, Mesh &mesh)
     {
         int n, v0, v1, v2;
         in >> n >> v0 >> v1 >> v2;
-        if (n != 3)
-            continue; // only triangles
+        if (n != 3) continue; // only triangles
         mesh.indices.push_back(v0);
         mesh.indices.push_back(v1);
         mesh.indices.push_back(v2);
@@ -65,13 +64,7 @@ GLuint createShader(GLenum type, const char *src)
     glCompileShader(shader);
     GLint success;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        char log[512];
-        glGetShaderInfoLog(shader, 512, nullptr, log);
-        std::cerr << "Shader error:\n"
-                  << log << std::endl;
-    }
+    if (!success) printf("SHADER ERROR\n");
     return shader;
 }
 
@@ -105,43 +98,39 @@ void main() {
 }
 )";
 
+// global variables for zoom, rotate
 float yaw = 0.0f, pitch = 0.0f;
 float distance = 3.0f;
 double lastX, lastY;
 bool dragging = false;
 
-void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+void MouseBtnCB(GLFWwindow *window, int button, int action, int mods)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT)
+    if (button != GLFW_MOUSE_BUTTON_LEFT) return;
+    
+    if (action == GLFW_PRESS)
     {
-        if (action == GLFW_PRESS)
-        {
-            dragging = true;
-            glfwGetCursorPos(window, &lastX, &lastY);
-        }
-        else if (action == GLFW_RELEASE)
-            dragging = false;
+        dragging = true;
+        glfwGetCursorPos(window, &lastX, &lastY);
     }
+    else if (action == GLFW_RELEASE) dragging = false;
 }
 
-void cursorPosCallback(GLFWwindow *window, double xpos, double ypos)
+void CursorDragCB(GLFWwindow *window, double xpos, double ypos)
 {
-    if (dragging)
-    {
-        float dx = xpos - lastX;
-        float dy = ypos - lastY;
-        yaw += dx * 0.3f;
-        pitch += dy * 0.3f;
-        lastX = xpos;
-        lastY = ypos;
-    }
+    if(!dragging) return;
+    float dx = xpos - lastX;
+    float dy = ypos - lastY;
+    yaw += dx * 0.3f;
+    pitch += dy * 0.3f;
+    lastX = xpos;
+    lastY = ypos;
 }
 
-void scrollCallback(GLFWwindow *window, double xoff, double yoff)
+void ScrollCB(GLFWwindow *window, double xoff, double yoff)
 {
     distance -= yoff * 0.1f;
-    if (distance < 0.5f)
-        distance = 0.5f;
+    if (distance < 0.5f) distance = 0.5f;
 }
 
 int main()
@@ -155,9 +144,9 @@ int main()
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-    glfwSetMouseButtonCallback(window, mouseButtonCallback);
-    glfwSetCursorPosCallback(window, cursorPosCallback);
-    glfwSetScrollCallback(window, scrollCallback);
+    glfwSetMouseButtonCallback(window, MouseBtnCB);
+    glfwSetCursorPosCallback(window, CursorDragCB);
+    glfwSetScrollCallback(window, ScrollCB);
 
     // ImGui setup
     IMGUI_CHECKVERSION();
@@ -167,9 +156,8 @@ int main()
     ImGui::StyleColorsDark();
 
     Mesh mesh;
-    if (!loadOFF("../bunny.off", mesh))
-        return -1;
-    std::cout << "Loaded vertices: " << mesh.vertices.size() / 3 << " faces: " << mesh.indices.size() / 3 << "\n";
+    if (!LoadOFF("../bunny.off", mesh)) return -1;
+    std::cout << "loaded vertices: " << mesh.vertices.size() / 3 << " faces: " << mesh.indices.size() / 3 << "\n";
 
     GLuint VAO, VBO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -192,14 +180,6 @@ int main()
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        ImGui::Begin("Viewer Controls");
-        ImGui::Text("Drag: Rotate | Scroll: Zoom");
-        ImGui::SliderFloat("Distance", &distance, 0.5f, 5.0f);
-        ImGui::End();
-
-        ImGui::Render();
         int w, h;
         glfwGetFramebufferSize(window, &w, &h);
         glViewport(0, 0, w, h);
