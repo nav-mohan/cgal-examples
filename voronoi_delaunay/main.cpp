@@ -12,66 +12,81 @@
 #include <cmath>
 #include <iostream>
 
-typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
-typedef K::Point_2 Point;
-typedef CGAL::Delaunay_triangulation_2<K> Delaunay;
+typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel_t;
+typedef CGAL::Delaunay_triangulation_2<Kernel_t> Delaunay;
+typedef Kernel_t::Point_2 Point;
+typedef Kernel_t::Segment_2 Segment;
+typedef Kernel_t::Ray_2 Ray;
 
 static Delaunay dt;
 static std::vector<Point> points;
 
-static int window_width = 900, window_height = 600;
+static int window_width = 900; 
+static int window_height = 600;
 static bool show_delaunay = true;
 static bool show_voronoi = true;
-static bool show_points = true;
 
-Point screen_to_world(double xpos, double ypos) {
+Point ScreenToWorld(double xpos, double ypos)
+{
     double x = xpos / window_width;
     double y = 1.0 - ypos / window_height;
     return Point(x, y);
 }
 
-void recompute() {
+void Recompute()
+{
     dt.clear();
     if (!points.empty())
         dt.insert(points.begin(), points.end());
 }
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    ImGuiIO& io = ImGui::GetIO();
-    if (io.WantCaptureMouse) return;
+void MouseBtnCB(GLFWwindow *window, int button, int action, int mods)
+{
+    ImGuiIO &io = ImGui::GetIO();
+    if (io.WantCaptureMouse)
+        return;
 
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
-    Point p = screen_to_world(xpos, ypos);
+    Point p = ScreenToWorld(xpos, ypos);
 
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
         points.push_back(p);
-        recompute();
+        Recompute();
     }
-    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+    {
         // delete nearest point (if close)
-        if (points.empty()) return;
+        if (points.empty())
+            return;
         double min_dist = 0.02;
         auto nearest = points.end();
-        for (auto it = points.begin(); it != points.end(); ++it) {
+        for (auto it = points.begin(); it != points.end(); ++it)
+        {
             double d = std::sqrt(CGAL::squared_distance(*it, p));
-            if (d < min_dist) {
+            if (d < min_dist)
+            {
                 min_dist = d;
                 nearest = it;
             }
         }
-        if (nearest != points.end()) {
+        if (nearest != points.end())
+        {
             points.erase(nearest);
-            recompute();
+            Recompute();
         }
     }
 }
 
-void draw_delaunay(const Delaunay& dt) {
+void DrawDelaunay(const Delaunay &dt)
+{
     glColor3f(0.2f, 0.6f, 1.0f);
     glBegin(GL_LINES);
-    for (auto f = dt.finite_faces_begin(); f != dt.finite_faces_end(); ++f) {
-        for (int i = 0; i < 3; ++i) {
+    for (auto f = dt.finite_faces_begin(); f != dt.finite_faces_end(); ++f)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
             Point a = f->vertex(i)->point();
             Point b = f->vertex((i + 1) % 3)->point();
             glVertex2f(a.x(), a.y());
@@ -81,18 +96,23 @@ void draw_delaunay(const Delaunay& dt) {
     glEnd();
 }
 
-void draw_voronoi(const Delaunay& dt) {
+void DrawVoronoi(const Delaunay &dt)
+{
     glColor3f(1.0f, 0.85f, 0.1f);
     glBegin(GL_LINES);
-    for (auto e = dt.finite_edges_begin(); e != dt.finite_edges_end(); ++e) {
+    for (auto e = dt.finite_edges_begin(); e != dt.finite_edges_end(); ++e)
+    {
         CGAL::Object o = dt.dual(e);
-        if (const K::Segment_2* s = CGAL::object_cast<K::Segment_2>(&o)) {
+        if (const Segment *s = CGAL::object_cast<Segment>(&o))
+        {
             glVertex2f(s->source().x(), s->source().y());
             glVertex2f(s->target().x(), s->target().y());
-        } else if (const K::Ray_2* r = CGAL::object_cast<K::Ray_2>(&o)) {
+        }
+        else if (const Kernel_t::Ray_2 *r = CGAL::object_cast<Kernel_t::Ray_2>(&o))
+        {
             // Clip to a box [0,1]^2 for visualization
-            K::Point_2 src = r->source();
-            K::Point_2 dir = src + 0.5 * (r->to_vector() / std::sqrt(r->to_vector().squared_length()));
+            Point src = r->source();
+            Point dir = src + 0.5 * (r->to_vector() / std::sqrt(r->to_vector().squared_length()));
             glVertex2f(src.x(), src.y());
             glVertex2f(dir.x(), dir.y());
         }
@@ -100,33 +120,35 @@ void draw_voronoi(const Delaunay& dt) {
     glEnd();
 }
 
-void draw_points() {
+void DrawPoints()
+{
     glPointSize(6.0f);
     glColor3f(1.0f, 0.3f, 0.3f);
     glBegin(GL_POINTS);
-    for (auto& p : points)
-        glVertex2f(p.x(), p.y());
+    for (auto &p : points) glVertex2f(p.x(), p.y());
     glEnd();
 }
 
-int main() {
+int main()
+{
     glfwInit();
-    GLFWwindow* window = glfwCreateWindow(window_width, window_height, "Delaunay + Voronoi Visualization", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(window_width, window_height, "delaunay + voronoi", nullptr, nullptr);
     glfwMakeContextCurrent(window);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetMouseButtonCallback(window, MouseBtnCB);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
     // ImGui setup
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO &io = ImGui::GetIO();
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-    recompute();
+    Recompute();
 
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(window))
+    {
         glfwPollEvents();
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -140,10 +162,10 @@ int main() {
         ImGui::Separator();
         ImGui::Checkbox("Show Delaunay", &show_delaunay);
         ImGui::Checkbox("Show Voronoi", &show_voronoi);
-        ImGui::Checkbox("Show Points", &show_points);
-        if (ImGui::Button("Clear All")) {
+        if (ImGui::Button("Clear All"))
+        {
             points.clear();
-            recompute();
+            Recompute();
         }
         ImGui::End();
 
@@ -158,9 +180,9 @@ int main() {
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
-        if (show_delaunay) draw_delaunay(dt);
-        if (show_voronoi) draw_voronoi(dt);
-        if (show_points) draw_points();
+        DrawPoints();
+        if (show_delaunay) DrawDelaunay(dt);
+        if (show_voronoi) DrawVoronoi(dt);
 
         // Render ImGui overlay
         ImGui::Render();
